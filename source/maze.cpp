@@ -1,6 +1,5 @@
 
 #include <vector>
-#include <mutex>
 
 #include "maze.h"
 #include "utils.h"
@@ -9,6 +8,8 @@
 extern MicroBit uBit;
 
 namespace {
+  constexpr uint8_t sDI = 255u;
+
   // Array row, column (y, x)
   using Row = std::vector<int8_t>;
   using Maze = std::vector<Row>;
@@ -103,50 +104,100 @@ namespace {
     }
   }
 
-  void update (
+  void tilt (MicroBitImage& image)
+  {
+    for (int i = 0; i < 3; ++i)
+    {
+      uBit.sleep (25);
+      uBit.display.clear ();
+      uBit.sleep (25);
+      uBit.display.print (image);
+    }
+  }
+
+  void setLeft (MicroBitImage& img, bool fill)
+  {
+    img.setPixelValue (0, 0, sDI);
+    img.setPixelValue (0, 4, sDI);
+    if (fill)
+      for (int i = 1; i < 4; ++i)
+        img.setPixelValue (0, i, sDI);
+  }
+  void setRight (MicroBitImage& img, bool fill)
+  {
+    img.setPixelValue (4, 0, sDI);
+    img.setPixelValue (4, 4, sDI);
+    if (fill)
+      for (int i = 1; i < 4; ++i)
+        img.setPixelValue (4, i, sDI);
+  }
+  void setMiddle (MicroBitImage& img, bool fill)
+  {
+    for (int i = 1; i < 4; ++i) {
+      img.setPixelValue(i, 1, sDI);
+      img.setPixelValue(i, 3, sDI);
+    }
+    img.setPixelValue(1, 2, sDI);
+    img.setPixelValue(3, 2, sDI);
+    if (fill)
+      img.setPixelValue (3, 3, sDI);
+  }
+
+  void updateImage (
     MicroBitImage& image,
     Maze const& maze,
-    Player const& player,
-    bool tilt)
+    Player const& player)
   {
-
+    image.clear ();
+    auto const part = getMazePart(maze, player);
+    setLeft(image, part.left);
+    setMiddle(image, part.front);
+    setRight(image,part.right);
   }
 
   void left (MicroBitEvent)
   {
     sPlayer.di = static_cast<Direction> ((sPlayer.di + 1) % 4);
-    update (
+
+    updateImage (
       sScreen,
       sMaze,
-      sPlayer,
-      false /* no tilt */
+      sPlayer
     );
+
+    uBit.display.print (sScreen);
   }
 
   void right (MicroBitEvent)
   {
     sPlayer.di = static_cast<Direction> ((sPlayer.di - 1) % 4);
-    update (
+
+    updateImage (
       sScreen,
       sMaze,
-      sPlayer,
-      false /* no tilt */
+      sPlayer
     );
+
+    uBit.display.print (sScreen);
   }
 
   void forward (MicroBitEvent)
   {
     auto const mazePart = getMazePart (sMaze, sPlayer);
+    if (mazePart.front) {
+      tilt (sScreen);
+      return;
+    }
 
-    if (!mazePart.front)
-      move (sPlayer);
+    move (sPlayer);
 
-    update (
+    updateImage (
       sScreen,
       sMaze,
-      sPlayer,
-      mazePart.front /* tilt? */
+      sPlayer
     );
+
+    uBit.display.print (sScreen);
   }
   
   void init ()
@@ -202,7 +253,14 @@ namespace {
 namespace maze {
 
 void run() {
-  init();
+  init ();
+
+  updateImage (
+    sScreen,
+    sMaze,
+    sPlayer
+  );
+  uBit.display.print (sScreen);
 
   leave = false;
   while (!leave) {
