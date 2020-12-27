@@ -163,9 +163,20 @@ namespace {
     setRight(image,part.right);
   }
 
+  int modulo4 (int v)
+  {
+    int constexpr mod = 4;
+    if (v >= mod)
+      return v - mod;
+    else if (v < 0)
+      return v + mod;
+    else
+      return v;
+  }
+
   void left (MicroBitEvent)
   {
-    sPlayer.di = static_cast<Direction> ((sPlayer.di - 1) % 4);
+    sPlayer.di = static_cast<Direction> (modulo4 (sPlayer.di - 1));
 
     updateImage (
       sScreen,
@@ -178,7 +189,7 @@ namespace {
 
   void right (MicroBitEvent)
   {
-    sPlayer.di = static_cast<Direction> ((sPlayer.di + 1) % 4);
+    sPlayer.di = static_cast<Direction> (modulo4 (sPlayer.di + 1));
 
     updateImage (
       sScreen,
@@ -282,6 +293,7 @@ void run() {
   }
 
   uBit.rgb.off();
+  uBit.display.clear();
 
   cleanup();
 }
