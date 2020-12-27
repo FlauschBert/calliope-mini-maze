@@ -140,7 +140,7 @@ namespace {
     img.setPixelValue(1, 2, sDI);
     img.setPixelValue(3, 2, sDI);
     if (fill)
-      img.setPixelValue (3, 3, sDI);
+      img.setPixelValue (2, 2, sDI);
   }
 
   void updateImage (
@@ -157,7 +157,7 @@ namespace {
 
   void left (MicroBitEvent)
   {
-    sPlayer.di = static_cast<Direction> ((sPlayer.di + 1) % 4);
+    sPlayer.di = static_cast<Direction> ((sPlayer.di - 1) % 4);
 
     updateImage (
       sScreen,
@@ -170,7 +170,7 @@ namespace {
 
   void right (MicroBitEvent)
   {
-    sPlayer.di = static_cast<Direction> ((sPlayer.di - 1) % 4);
+    sPlayer.di = static_cast<Direction> ((sPlayer.di + 1) % 4);
 
     updateImage (
       sScreen,
