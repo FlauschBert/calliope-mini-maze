@@ -115,6 +115,14 @@ namespace {
     }
   }
 
+  void animateMove ()
+  {
+    for (uint8_t i = 0; i < 25; i += 5) {
+      uBit.sleep(5);
+      uBit.rgb.setColour(0, i, 0, i);
+    }
+  }
+
   void setLeft (MicroBitImage& img, bool fill)
   {
     img.setPixelValue (0, 0, sDI);
@@ -197,6 +205,7 @@ namespace {
       sPlayer
     );
 
+    animateMove ();
     uBit.display.print (sScreen);
   }
   
@@ -264,7 +273,7 @@ void run() {
   uBit.display.setBrightness(15);
   uBit.display.print (sScreen);
 
-  uBit.rgb.setColour(0,15,0,0);
+  uBit.rgb.setColour(0,25,0,25);
 
   init ();
 
