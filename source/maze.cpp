@@ -261,8 +261,10 @@ void run() {
     sPlayer
   );
 
+  uBit.display.setBrightness(15);
   uBit.display.print (sScreen);
-  uBit.rgb.setColour(0,25,0,0);
+
+  uBit.rgb.setColour(0,15,0,0);
 
   init ();
 
