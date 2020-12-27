@@ -202,11 +202,6 @@ namespace {
   
   void init ()
   {
-    // Initialize player position and direction
-    sPlayer.px = sGame.sx;
-    sPlayer.py = sGame.sy;
-    sPlayer.di = sGame.sd;
-
     // button A == left
     uBit.messageBus.listen (
       MICROBIT_ID_BUTTON_A,
@@ -253,7 +248,10 @@ namespace {
 namespace maze {
 
 void run() {
-  init ();
+  // Initialize player position and direction
+  sPlayer.px = sGame.sx;
+  sPlayer.py = sGame.sy;
+  sPlayer.di = sGame.sd;
 
   updateImage (
     sScreen,
@@ -261,6 +259,8 @@ void run() {
     sPlayer
   );
   uBit.display.print (sScreen);
+
+  init ();
 
   leave = false;
   while (!leave) {
