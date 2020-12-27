@@ -1,0 +1,11 @@
+{
+  "name": "calliope-project-template",
+  "version": "1.0.0",
+  "description": "Calliope Project Template",
+  "license": "Apache 2.0",
+  "dependencies": {
+    "microbit": "calliope-mini/microbit#v2.2.0-rc6-calliope.rc3"
+  },
+  "targetDependencies": {},
+  "bin": "./source"
+}
