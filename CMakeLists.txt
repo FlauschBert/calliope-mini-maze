@@ -7,8 +7,10 @@ cmake_minimum_required(VERSION 3.5)
 set(CMAKE_TOOLCHAIN_FILE yotta_targets/mbed-gcc/CMake/toolchain.cmake)
 set(CMAKE_BUILD_TYPE Debug)
 
-project(calliope-firmware C CXX)
+project(calliope-maze C CXX)
 include(yotta_targets/calliope-mini-classic-gcc/CMake/toolchain.cmake)
+
+add_compile_options("-Wall" "-Wextra" "-Werror" "-pedantic" "$<$<CONFIG:RELEASE>:-O3>")
 
 add_definitions(-DNRF51 -DTARGET_NRF51 -DTARGET_NRF51_CALLIOPE)
 
@@ -60,10 +62,10 @@ include_directories(${NRF51_SDK_INC})
 
 add_executable(main
         source/main.cpp
-        source/RunVolumeMeter.cpp
-        source/RunVolumeMeter.h
-        source/Utils.cpp
-        source/Utils.h
+        source/maze.cpp
+        source/maze.h
+        source/utils.cpp
+        source/utils.h
         # add more source files here, if needed
         )
 target_link_libraries(main microbit microbit-dal microbit nrf51sdk)
