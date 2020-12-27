@@ -253,18 +253,20 @@ void run() {
   sPlayer.py = sGame.sy;
   sPlayer.di = sGame.sd;
 
+  sScreen = MicroBitImage (5,5);
+
   updateImage (
     sScreen,
     sMaze,
     sPlayer
   );
+
   uBit.display.print (sScreen);
+  uBit.rgb.setColour(0,25,0,0);
 
   init ();
 
-  leave = false;
-  while (!leave) {
-
+  while (true) {
     uBit.sleep(100);
   }
 
