@@ -14,7 +14,7 @@ extern MicroBit uBit;
 
 namespace {
   uint8_t constexpr sDI = 255u;
-  uint8_t constexpr sRGB = 25u;
+  uint8_t constexpr sRGB = 30u;
 
   // Array row, column (y, x)
   // 9: blocking wall
@@ -108,27 +108,48 @@ namespace {
     return part;
   }
 
-  using Color = std::tuple<uint8_t,uint8_t,uint8_t>;
-  Color getFloorColor (Maze const& maze, Player const& player)
+  float getDistanceNorm (Maze const& maze, Player const& player)
+  {
+    auto const max = (maze.front ().size () - 2) + (maze.size () - 2);
+    auto const manhattan = std::abs (sGame.ex - player.px) + std::abs (sGame.ey - player.py);
+    return static_cast<float> (manhattan) / static_cast<float> (max);
+  }
+
+  using Colorf = std::tuple<float,float,float>;
+  Colorf getFloorColor (Maze const& maze, Player const& player)
   {
     auto const floor = maze [player.py][player.px];
     switch (floor)
     {
       case 0:
-        return std::make_tuple(0,sRGB,sRGB);
+        return std::make_tuple(0.f,1.f,1.f);
       case 1:
       case 8:
-        return std::make_tuple(sRGB,sRGB,0);
+        return std::make_tuple(1.f,1.f,0.f);
       default:
-        return std::make_tuple(sRGB,0,0);
+        return std::make_tuple(1.f,0.f,0.f);
     }
+  }
+
+  using Color = std::tuple<uint8_t,uint8_t,uint8_t>;
+  Color getScaled (Colorf const& color, float const intensity, uint8_t const rgbMax)
+  {
+    return std::make_tuple (
+      static_cast<uint8_t> (std::get<0> (color) * intensity * rgbMax + .5f),
+      static_cast<uint8_t> (std::get<1> (color) * intensity * rgbMax + .5f),
+      static_cast<uint8_t> (std::get<2> (color) * intensity * rgbMax + .5f)
+    );
   }
 
   void setFloorColor (Maze const& maze, Player const& player)
   {
+    auto const distanceNorm = getDistanceNorm (maze, player);
+    auto const intensity = 1.f - distanceNorm;
+
     uint8_t r, g, b;
-    std::tie (r, g, b) = getFloorColor (maze, player);
-    uBit.rgb.setColour(r, g, b, sRGB);
+    std::tie (r, g, b) = getScaled (getFloorColor (maze, player), intensity, sRGB);
+
+    uBit.rgb.setColour (r, g, b, 0);
   }
 
   void move (Player& player)
@@ -322,8 +343,7 @@ void run() {
 
   uBit.display.setBrightness(15);
   uBit.display.print (sScreen);
-
-  uBit.rgb.setColour(0,sRGB,0,sRGB);
+  setFloorColor(sMaze, sPlayer);
 
   init ();
 
