@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.5)
 set(CMAKE_TOOLCHAIN_FILE yotta_targets/mbed-gcc/CMake/toolchain.cmake)
 set(CMAKE_BUILD_TYPE Debug)
 
-project(calliope-maze C CXX)
+project(calliope-mini-maze C CXX)
 include(yotta_targets/calliope-mini-classic-gcc/CMake/toolchain.cmake)
 
 add_compile_options("-Wall" "-Wextra" "-Werror" "-pedantic" "$<$<CONFIG:RELEASE>:-O3>")
