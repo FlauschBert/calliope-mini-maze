@@ -64,8 +64,6 @@ add_executable(main
         source/main.cpp
         source/maze.cpp
         source/maze.h
-        source/utils.cpp
-        source/utils.h
         # add more source files here, if needed
         )
 target_link_libraries(main microbit microbit-dal microbit nrf51sdk)

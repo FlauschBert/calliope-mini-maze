@@ -1,31 +1,47 @@
 
 #include <vector>
+#include <tuple>
 
 #include "maze.h"
-#include "utils.h"
 
 #include <MicroBit.h>
 extern MicroBit uBit;
 
+// TODO:
+// - rein pusten: map zentriert auf aktuelle position
+// - pulsieren rgb led in abhängigkeit zur ziel distanz
+// - different forward and turn around sounds
+
 namespace {
-  constexpr uint8_t sDI = 255u;
+  uint8_t constexpr sDI = 255u;
+  uint8_t constexpr sRGB = 25u;
 
   // Array row, column (y, x)
+  // 9: blocking wall
+  // 8: non-blocking secret wall
+  // 0: normal floor
+  // 1: secret floor, color
+  //
+  // visibility:
+  // 0 - 4: no wall visible
+  // 5 - 9: wall visible
+  //
   using Row = std::vector<int8_t>;
   using Maze = std::vector<Row>;
   Maze const sMaze = {
-    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, // 0
-    { 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1 }, // 1
-    { 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1 }, // 2
-    { 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1 }, // 3
-    { 1, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1 }, // 4
-    { 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1 }, // 5
-    { 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1 }, // 6
-    { 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1 }, // 7
-    { 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1 }, // 8
-    { 1, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1 }, // 9
-    { 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1 }, // A
-    { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }  // B
+  //  0  1  2  3  4  5  6  7  8  9  A  B
+    { 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9 }, // 0
+    { 9, 0, 0, 0, 0, 0, 8, 8, 9, 9, 9, 9 }, // 1
+    { 9, 0, 9, 9, 9, 0, 9, 1, 9, 9, 9, 9 }, // 2
+    { 9, 0, 9, 0, 9, 0, 9, 1, 9, 9, 9, 9 }, // 3
+    { 9, 0, 9, 0, 0, 0, 9, 1, 9, 9, 9, 9 }, // 4
+    { 9, 0, 9, 0, 0, 9, 9, 1, 9, 9, 9, 9 }, // 5
+    { 9, 0, 0, 0, 0, 9, 9, 1, 9, 9, 9, 9 }, // 6
+    { 9, 0, 0, 0, 9, 9, 9, 1, 9, 9, 9, 9 }, // 7
+    { 9, 9, 0, 0, 0, 9, 9, 1, 9, 9, 9, 9 }, // 8
+    { 9, 9, 0, 9, 0, 0, 8, 1, 9, 9, 9, 9 }, // 9
+    { 9, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9, 9 }, // A
+    { 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9 }  // B
   };
 
   // North means looking to row zero
@@ -35,7 +51,7 @@ namespace {
     int32_t sx = 5;
     int32_t sy = 9;
     Direction sd = West;
-    int32_t ex = 6;
+    int32_t ex = 5;
     int32_t ey = 1;
   } const sGame;
   
@@ -46,10 +62,12 @@ namespace {
   } sPlayer;
   
   struct MazePart {
+    // visibility
     bool front = false;
     bool left = false;
     bool right = false;
-    bool error = false;
+    // movability
+    bool blocked = false;
   };
 
   MicroBitImage sScreen;
@@ -60,30 +78,57 @@ namespace {
     MazePart part;
     switch (player.di) {
       case North:
-        part.front = 0 < maze [player.py - 1][player.px + 0];
-        part.left = 0 < maze [player.py + 0][player.px - 1];
-        part.right = 0 < maze [player.py + 0][player.px + 1];
+        part.blocked = 8 < maze [player.py - 1][player.px + 0];
+        part.front = 4 < maze [player.py - 1][player.px + 0];
+        part.left = 4 < maze [player.py + 0][player.px - 1];
+        part.right = 4 < maze [player.py + 0][player.px + 1];
         break;
       case South:
-        part.front = 0 < maze [player.py + 1][player.px + 0];
-        part.left = 0 < maze [player.py + 0][player.px + 1];
-        part.right = 0 < maze [player.py + 0][player.px - 1];
+        part.blocked = 8 < maze [player.py + 1][player.px + 0];
+        part.front = 4 < maze [player.py + 1][player.px + 0];
+        part.left = 4 < maze [player.py + 0][player.px + 1];
+        part.right = 4 < maze [player.py + 0][player.px - 1];
         break;
       case West:
-        part.front = 0 < maze [player.py + 0][player.px - 1];
-        part.left = 0 < maze [player.py + 1][player.px + 0];
-        part.right = 0 < maze [player.py - 1][player.px + 0];
+        part.blocked = 8 < maze [player.py + 0][player.px - 1];
+        part.front = 4 < maze [player.py + 0][player.px - 1];
+        part.left = 4 < maze [player.py + 1][player.px + 0];
+        part.right = 4 < maze [player.py - 1][player.px + 0];
         break;
       case East:
-        part.front = 0 < maze [player.py + 0][player.px + 1];
-        part.left = 0 < maze [player.py - 1][player.px + 0];
-        part.right = 0 < maze [player.py + 1][player.px + 0];
+        part.blocked = 8 < maze [player.py + 0][player.px + 1];
+        part.front = 4 < maze [player.py + 0][player.px + 1];
+        part.left = 4 < maze [player.py - 1][player.px + 0];
+        part.right = 4 < maze [player.py + 1][player.px + 0];
         break;
       default:
-        part.error = true;
+        part.blocked = true;
         break;
     }
     return part;
+  }
+
+  using Color = std::tuple<uint8_t,uint8_t,uint8_t>;
+  Color getFloorColor (Maze const& maze, Player const& player)
+  {
+    auto const floor = maze [player.py][player.px];
+    switch (floor)
+    {
+      case 0:
+        return std::make_tuple(0,sRGB,sRGB);
+      case 1:
+      case 8:
+        return std::make_tuple(sRGB,sRGB,0);
+      default:
+        return std::make_tuple(sRGB,0,0);
+    }
+  }
+
+  void setFloorColor (Maze const& maze, Player const& player)
+  {
+    uint8_t r, g, b;
+    std::tie (r, g, b) = getFloorColor (maze, player);
+    uBit.rgb.setColour(r, g, b, sRGB);
   }
 
   void move (Player& player)
@@ -112,14 +157,6 @@ namespace {
       uBit.display.clear ();
       uBit.sleep (25);
       uBit.display.print (image);
-    }
-  }
-
-  void animateMove ()
-  {
-    for (uint8_t i = 0; i < 25; i += 5) {
-      uBit.sleep(5);
-      uBit.rgb.setColour(0, i, 0, i);
     }
   }
 
@@ -185,6 +222,7 @@ namespace {
     );
 
     uBit.display.print (sScreen);
+    setFloorColor(sMaze, sPlayer);
   }
 
   void right (MicroBitEvent)
@@ -198,12 +236,13 @@ namespace {
     );
 
     uBit.display.print (sScreen);
+    setFloorColor(sMaze, sPlayer);
   }
 
   void forward (MicroBitEvent)
   {
     auto const mazePart = getMazePart (sMaze, sPlayer);
-    if (mazePart.front) {
+    if (mazePart.blocked) {
       tilt (sScreen);
       return;
     }
@@ -216,8 +255,8 @@ namespace {
       sPlayer
     );
 
-    animateMove ();
     uBit.display.print (sScreen);
+    setFloorColor(sMaze, sPlayer);
   }
   
   void init ()
@@ -284,7 +323,7 @@ void run() {
   uBit.display.setBrightness(15);
   uBit.display.print (sScreen);
 
-  uBit.rgb.setColour(0,25,0,25);
+  uBit.rgb.setColour(0,sRGB,0,sRGB);
 
   init ();
 
