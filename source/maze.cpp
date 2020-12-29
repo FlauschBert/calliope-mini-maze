@@ -532,7 +532,7 @@ void playTitleMelody ()
     { h1, t2 },
     { br, t8 },
     { g1, t2 },
-    { a1, t1 }
+    { c1, t1 }
   };
 
   play (uBit, m);
