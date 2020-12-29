@@ -9,6 +9,10 @@ To program with C and C++ check out https://github.com/calliope-mini and especia
 - https://github.com/calliope-mini/calliope-demo: check the *source* folder for examples on how to use the different components of the Calliope mini.
 - https://github.com/calliope-mini/calliope-project-template: use this project to setup the environment for programming and generating the neded *.hex* files for the Calliope mini.
 
+## Documentation
+
+[Here](https://lancaster-university.github.io/microbit-docs/) you can find the documentation of the *micro:bit* runtime which is built on top of the *ARM mbed* and *nordic nrf51* platforms.
+
 ## Project setup
 
 After doing the steps from the [calliope-project-template](https://github.com/calliope-mini/calliope-project-template), overwrite the project files with the files of this repo.  
