@@ -1,6 +1,7 @@
 
 #include <vector>
 #include <tuple>
+#include <string>
 
 #include "maze.h"
 
@@ -16,7 +17,7 @@ namespace
 {
 uint8_t constexpr sDI = 255u;
 uint8_t constexpr sRGB = 30u;
-float constexpr sSlowestPulse = 1000.f /*ms*/;
+float constexpr sSlowestPulse = 1200.f /*ms*/;
 float constexpr sMinPulseResolution = 20.f /*ms*/;
 
 // Array row, column (y, x)
@@ -361,6 +362,36 @@ void cleanup ()
     forward
   );
 }
+
+bool isTheEnd (Game const& game, Player const& player)
+{
+  return game.ex == player.px &&
+         game.ey == player.py;
+}
+
+void setString (MicroBitImage& image, std::string const& string)
+{
+  // display size is 5 in both x and y direction
+  uint16_t constexpr size = 5;
+  image = MicroBitImage (string.size () * size, size);
+  uint16_t x = 0;
+  for (char const c : string)
+  {
+    image.print (c, x, 0);
+    x += size;
+  }
+}
+
+void showAnimated (std::string const& text, int delay)
+{
+  uBit.display.setBrightness (30);
+  MicroBitImage image;
+  setString (image, text);
+  uBit.display.animate (image, delay, 1, 0);
+  uBit.sleep(50);
+  uBit.display.clear ();
+}
+
 }
 
 namespace maze
@@ -368,6 +399,8 @@ namespace maze
 
 void run ()
 {
+  showAnimated ("Mini Maze", 200);
+
   // Initialize player position and direction
   sPlayer.px = sGame.sx;
   sPlayer.py = sGame.sy;
@@ -388,14 +421,16 @@ void run ()
 
   init ();
 
-  while (true)
+  while (!isTheEnd(sGame, sPlayer))
   {
     updatePulse (sPlayer);
     uBit.sleep (sMinPulseResolution /*ms*/);
   }
 
+  uBit.sleep (500 /*ms*/);
   uBit.rgb.off ();
-  uBit.display.clear ();
+
+  showAnimated ("The End!", 300);
 
   cleanup ();
 }
