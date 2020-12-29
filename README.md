@@ -39,7 +39,7 @@ It is about imitating the good old dungeon crawlers like *The bards tale* or som
 
 ![](mini_maze_concept.png)
 
-Beginning in the middle, the player is the dot in the lower middle and we can see the walls top down as little boxes..  
+Beginning in the middle, the player is the dot in the lower middle and we can see the walls top down as little boxes.  
 In the upper row we can see the walls shaded if we would stand inside the floor and we would have more than 5x5 pixels on the display.  
 In the last row we can see the corresponding drawing as we do on the small dsiplay off the Calliope mini.  
 We only see one field before us and one on the left and on the right.
