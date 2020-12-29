@@ -15,6 +15,7 @@ extern MicroBit uBit;
 namespace {
   uint8_t constexpr sDI = 255u;
   uint8_t constexpr sRGB = 30u;
+  float constexpr sSlowestPulse = 1000.f /*ms*/;
 
   // Array row, column (y, x)
   // 9: blocking wall
@@ -54,11 +55,17 @@ namespace {
     int32_t ex = 5;
     int32_t ey = 1;
   } const sGame;
-  
+
+  using Colorf = std::tuple<float,float,float>;
   struct Player {
     int32_t px = 1;
     int32_t py = 1;
     Direction di = North;
+
+    // distance pulse rgb handling - defaults to largest distance
+    Colorf rgb = std::make_tuple (0.f,0.f,0.f);
+    float pulse = 1.f;
+    unsigned long lastPulseStart = 0ul;
   } sPlayer;
   
   struct MazePart {
@@ -108,6 +115,7 @@ namespace {
     return part;
   }
 
+  // manhattan distance between player position and goal normalized by maximum manhattan distance
   float getDistanceNorm (Maze const& maze, Player const& player)
   {
     auto const max = (maze.front ().size () - 2) + (maze.size () - 2);
@@ -115,7 +123,6 @@ namespace {
     return static_cast<float> (manhattan) / static_cast<float> (max);
   }
 
-  using Colorf = std::tuple<float,float,float>;
   Colorf getFloorColor (Maze const& maze, Player const& player)
   {
     auto const floor = maze [player.py][player.px];
@@ -135,19 +142,31 @@ namespace {
   Color getScaled (Colorf const& color, float const intensity, uint8_t const rgbMax)
   {
     return std::make_tuple (
-      static_cast<uint8_t> (std::get<0> (color) * intensity * rgbMax + .5f),
-      static_cast<uint8_t> (std::get<1> (color) * intensity * rgbMax + .5f),
-      static_cast<uint8_t> (std::get<2> (color) * intensity * rgbMax + .5f)
+      static_cast<uint8_t> (std::get<0> (color) * intensity * static_cast<float> (rgbMax)),
+      static_cast<uint8_t> (std::get<1> (color) * intensity * static_cast<float> (rgbMax)),
+      static_cast<uint8_t> (std::get<2> (color) * intensity * static_cast<float> (rgbMax))
     );
   }
 
-  void setFloorColor (Maze const& maze, Player const& player)
+  void updateDistanceColor (Player& player, Maze const& maze)
   {
-    auto const distanceNorm = getDistanceNorm (maze, player);
-    auto const intensity = 1.f - distanceNorm;
+    player.rgb = getFloorColor (maze, player);
+    // relative time between two rgb led pulses: the shorter the nearer to the goal, can be 0.f
+    player.pulse = getDistanceNorm (maze, player);
+  }
+
+  void updatePulse (Player& player)
+  {
+    auto const maxPulse = std::max (player.pulse * sSlowestPulse, 0.0001f);
+    auto const time = uBit.systemTime ();
+
+    if (static_cast<float> (time - player.lastPulseStart) > maxPulse)
+      player.lastPulseStart = time;
+
+    auto const intensity = (1.f - player.pulse) * static_cast<float> (time - player.lastPulseStart) / maxPulse;
 
     uint8_t r, g, b;
-    std::tie (r, g, b) = getScaled (getFloorColor (maze, player), intensity, sRGB);
+    std::tie (r, g, b) = getScaled (player.rgb, intensity, sRGB);
 
     uBit.rgb.setColour (r, g, b, 0);
   }
@@ -243,7 +262,7 @@ namespace {
     );
 
     uBit.display.print (sScreen);
-    setFloorColor(sMaze, sPlayer);
+    updateDistanceColor(sPlayer, sMaze);
   }
 
   void right (MicroBitEvent)
@@ -257,7 +276,7 @@ namespace {
     );
 
     uBit.display.print (sScreen);
-    setFloorColor(sMaze, sPlayer);
+    updateDistanceColor(sPlayer, sMaze);
   }
 
   void forward (MicroBitEvent)
@@ -277,7 +296,7 @@ namespace {
     );
 
     uBit.display.print (sScreen);
-    setFloorColor(sMaze, sPlayer);
+    updateDistanceColor(sPlayer, sMaze);
   }
   
   void init ()
@@ -332,6 +351,7 @@ void run() {
   sPlayer.px = sGame.sx;
   sPlayer.py = sGame.sy;
   sPlayer.di = sGame.sd;
+  sPlayer.lastPulseStart = uBit.systemTime ();
 
   sScreen = MicroBitImage (5,5);
 
@@ -343,12 +363,13 @@ void run() {
 
   uBit.display.setBrightness(15);
   uBit.display.print (sScreen);
-  setFloorColor(sMaze, sPlayer);
+  updateDistanceColor (sPlayer,sMaze);
 
   init ();
 
   while (true) {
-    uBit.sleep(100);
+    updatePulse (sPlayer);
+    uBit.sleep(50 /*ms*/);
   }
 
   uBit.rgb.off();
