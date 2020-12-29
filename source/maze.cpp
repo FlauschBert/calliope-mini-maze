@@ -12,7 +12,6 @@ extern MicroBit uBit;
 
 // TODO:
 // - rein pusten: map zentriert auf aktuelle position
-// - different forward and turn around sounds
 // - play victory melody
 // - use setDisplayMode(DISPLAY_MODE_GREYSCALE) and show walls interior with
 //   less intensity
@@ -275,6 +274,24 @@ int modulo4 (int v)
     return v;
 }
 
+void playForwardSound ()
+{
+  uBit.soundmotor.soundOn (70);
+  uBit.sleep (50);
+  uBit.soundmotor.soundOff ();
+  uBit.sleep (50);
+  uBit.soundmotor.soundOn (70);
+  uBit.sleep (50);
+  uBit.soundmotor.soundOff ();
+}
+
+void playTurnAroundSound ()
+{
+  uBit.soundmotor.soundOn (100);
+  uBit.sleep (150);
+  uBit.soundmotor.soundOff ();
+}
+
 void left (MicroBitEvent)
 {
   sPlayer.di = static_cast<Direction> (modulo4 (sPlayer.di - 1));
@@ -285,6 +302,7 @@ void left (MicroBitEvent)
     sPlayer
   );
 
+  playTurnAroundSound ();
   uBit.display.print (sScreen);
   updateDistanceColor (sPlayer, sMaze);
 }
@@ -299,6 +317,7 @@ void right (MicroBitEvent)
     sPlayer
   );
 
+  playTurnAroundSound ();
   uBit.display.print (sScreen);
   updateDistanceColor (sPlayer, sMaze);
 }
@@ -320,6 +339,7 @@ void forward (MicroBitEvent)
     sPlayer
   );
 
+  playForwardSound ();
   uBit.display.print (sScreen);
   updateDistanceColor (sPlayer, sMaze);
 }
@@ -474,6 +494,8 @@ void run ()
 
   startScrolling (sAnimationActive, "TheEnd!", 200);
   waitForScrolling (sAnimationActive);
+
+  uBit.display.clear ();
 
   cleanup ();
 }
