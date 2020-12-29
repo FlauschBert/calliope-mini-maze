@@ -386,13 +386,7 @@ void printMap (MicroBitImage const& map, Player const& player)
   // Do not use copy constructor or copy operator here
   // No copy is generated in this case and the original
   // image is shifted
-
-  MicroBitImage tmp (
-    map.getWidth (),
-    map.getHeight (),
-    // program around bad api
-    const_cast<MicroBitImage*> (&map)->getBitmap ()
-  );
+  MicroBitImage tmp = const_cast<MicroBitImage*> (&map)->clone ();
 
   // shift left and up
   // +2 because of border,
