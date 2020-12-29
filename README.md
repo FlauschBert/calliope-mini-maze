@@ -35,6 +35,15 @@ The generated *.hex* file lands in the *build/calliope-mini-classic-gcc/source/*
 
 It is about imitating the good old dungeon crawlers like *The bards tale* or something like that. In this version at least walking around in a "3D-view" works. The goal is to find a special place on the map. As faster the little RGB LED is pulsing as nearer the final spot is. Use the buttons *A* and *B* to turn left and right and both at the same time for stepping forwards. Also some secrets are hidden.
 
+## Concept "3D-view"
+
+![](mini_maze_concept.png)
+
+Beginning in the middle, the player is the dot in the lower middle and we can see the walls top down as little boxes..  
+In the upper row we can see the walls shaded if we would stand inside the floor and we would have more than 5x5 pixels on the display.  
+In the last row we can see the corresponding drawing as we do on the small dsiplay off the Calliope mini.  
+We only see one field before us and one on the left and on the right.
+
 # License
 
 This template is available under the [BSD License 2.0](LICENSE)
