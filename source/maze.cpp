@@ -12,6 +12,9 @@ extern MicroBit uBit;
 // TODO:
 // - rein pusten: map zentriert auf aktuelle position
 // - different forward and turn around sounds
+// - title melody
+// - use setDisplayMode(DISPLAY_MODE_GREYSCALE) and show walls interior with
+//   less intensity
 
 namespace
 {
@@ -83,6 +86,7 @@ struct MazePart {
 };
 
 MicroBitImage sScreen;
+bool sAnimationActive = false;
 
 MazePart
 getMazePart (Maze const &maze, Player const &player)
@@ -369,27 +373,37 @@ bool isTheEnd (Game const& game, Player const& player)
          game.ey == player.py;
 }
 
-void setString (MicroBitImage& image, std::string const& string)
+void startScrolling (bool& active, std::string const& text, int const delay)
 {
-  // display size is 5 in both x and y direction
-  uint16_t constexpr size = 5;
-  image = MicroBitImage (string.size () * size, size);
-  uint16_t x = 0;
-  for (char const c : string)
-  {
-    image.print (c, x, 0);
-    x += size;
-  }
+  active = true;
+  uBit.display.setBrightness (30);
+  uBit.display.scrollAsync (text.c_str (), delay);
 }
 
-void showAnimated (std::string const& text, int delay)
+void animationDone (MicroBitEvent)
 {
-  uBit.display.setBrightness (30);
-  MicroBitImage image;
-  setString (image, text);
-  uBit.display.animate (image, delay, 1, 0);
-  uBit.sleep(50);
-  uBit.display.clear ();
+  sAnimationActive = false;
+}
+
+void waitForScrolling (bool& active)
+{
+  // display scrolling done
+  uBit.messageBus.listen (
+    MICROBIT_ID_DISPLAY,
+    MICROBIT_DISPLAY_EVT_ANIMATION_COMPLETE,
+    animationDone
+  );
+
+  while (active)
+  {
+    uBit.sleep (100);
+  }
+
+  uBit.messageBus.ignore (
+    MICROBIT_ID_DISPLAY,
+    MICROBIT_DISPLAY_EVT_ANIMATION_COMPLETE,
+    animationDone
+  );
 }
 
 }
@@ -399,7 +413,8 @@ namespace maze
 
 void run ()
 {
-  showAnimated ("Mini Maze", 200);
+  startScrolling (sAnimationActive, "Mini Maze 0.7", 200);
+  waitForScrolling (sAnimationActive);
 
   // Initialize player position and direction
   sPlayer.px = sGame.sx;
@@ -430,7 +445,8 @@ void run ()
   uBit.sleep (500 /*ms*/);
   uBit.rgb.off ();
 
-  showAnimated ("The End!", 300);
+  startScrolling (sAnimationActive, "The End!", 300);
+  waitForScrolling (sAnimationActive);
 
   cleanup ();
 }
