@@ -11,7 +11,8 @@ To program with C and C++ check out https://github.com/calliope-mini and especia
 
 ## Project setup
 
-After doing the steps from the [calliope-project-template](https://github.com/calliope-mini/calliope-project-template), overwrite the project files with the files of this repo.
+After doing the steps from the [calliope-project-template](https://github.com/calliope-mini/calliope-project-template), overwrite the project files with the files of this repo.  
+Notice that the original project template code is provided under the Apache-2.0 license.
 
 #### Setup on manjaro
 
@@ -32,7 +33,7 @@ The generated *.hex* file lands in the *build/calliope-mini-classic-gcc/source/*
 
 # The game
 
-It is about imitating the good old dungeon crawlers like *The bards tale* or something like that. In this version at least walking around in a "3D-view" works. The goal is to find a special place on the map. As faster the little RGB LED is pulsing as nearer the final spot is. Use the buttons *A* and *B* to turn left and right and both at the same time for stepping forwards. Also same secrets are hidden.
+It is about imitating the good old dungeon crawlers like *The bards tale* or something like that. In this version at least walking around in a "3D-view" works. The goal is to find a special place on the map. As faster the little RGB LED is pulsing as nearer the final spot is. Use the buttons *A* and *B* to turn left and right and both at the same time for stepping forwards. Also some secrets are hidden.
 
 # License
 

@@ -10,7 +10,6 @@ extern MicroBit uBit;
 
 // TODO:
 // - rein pusten: map zentriert auf aktuelle position
-// - pulsieren rgb led in abhängigkeit zur ziel distanz
 // - different forward and turn around sounds
 
 namespace
