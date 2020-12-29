@@ -424,25 +424,29 @@ void init ()
   uBit.messageBus.listen (
     MICROBIT_ID_BUTTON_A,
     MICROBIT_BUTTON_EVT_CLICK,
-    left
+    left,
+    MESSAGE_BUS_LISTENER_DROP_IF_BUSY
   );
   // button B == left
   uBit.messageBus.listen (
     MICROBIT_ID_BUTTON_B,
     MICROBIT_BUTTON_EVT_CLICK,
-    right
+    right,
+    MESSAGE_BUS_LISTENER_DROP_IF_BUSY
   );
   // button AB == forward
   uBit.messageBus.listen (
     MICROBIT_ID_BUTTON_AB,
     MICROBIT_BUTTON_EVT_CLICK,
-    forward
+    forward,
+    MESSAGE_BUS_LISTENER_DROP_IF_BUSY
   );
   // map mode
   uBit.messageBus.listen (
     MICROBIT_ID_GESTURE,
     MICROBIT_ACCELEROMETER_EVT_SHAKE,
-    toggleMap
+    toggleMap,
+    MESSAGE_BUS_LISTENER_DROP_IF_BUSY
   );
 }
 
@@ -498,7 +502,8 @@ void waitForScrolling (bool& active)
   uBit.messageBus.listen (
     MICROBIT_ID_DISPLAY,
     MICROBIT_DISPLAY_EVT_ANIMATION_COMPLETE,
-    animationDone
+    animationDone,
+    MESSAGE_BUS_LISTENER_IMMEDIATE
   );
 
   while (active)
