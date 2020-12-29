@@ -12,7 +12,6 @@ extern MicroBit uBit;
 // TODO:
 // - rein pusten: map zentriert auf aktuelle position
 // - different forward and turn around sounds
-// - title melody
 // - use setDisplayMode(DISPLAY_MODE_GREYSCALE) and show walls interior with
 //   less intensity
 
@@ -406,6 +405,47 @@ void waitForScrolling (bool& active)
   );
 }
 
+void playTitleMelody ()
+{
+  struct Tone
+  {
+    uint16_t hertz;
+    uint32_t period;
+  };
+  using Melody = std::vector<Tone>;
+
+  uint16_t const br = 0 /* break */;
+  uint16_t const g  = 196 /* hz */;
+  uint16_t const c1 = 262 /* hz */;
+  uint16_t const g1 = 392 /* hz */;
+
+  uint32_t const p8 = 100 /* ms */;
+  uint32_t const p4 = 200 /* ms */;
+  uint32_t const p1 = 800 /* ms */;
+
+  Melody m = {
+    { c1, p1 },
+    { c1, p1 },
+    { br, p8 },
+    { c1, p4 },
+    { g,  p4 },
+    { c1, p4 },
+    { g1, p1 }
+  };
+
+  for (auto const& tone : m)
+  {
+    if (br != tone.hertz)
+      uBit.soundmotor.soundOn (tone.hertz);
+    else
+      uBit.soundmotor.soundOff ();
+    uBit.sleep (tone.period);
+
+    uBit.soundmotor.soundOff ();
+    uBit.sleep (30);
+  }
+}
+
 }
 
 namespace maze
@@ -413,7 +453,8 @@ namespace maze
 
 void run ()
 {
-  startScrolling (sAnimationActive, "Mini Maze 0.7", 200);
+  startScrolling (sAnimationActive, "MiniMaze0.7", 100);
+  playTitleMelody ();
   waitForScrolling (sAnimationActive);
 
   // Initialize player position and direction
@@ -445,7 +486,7 @@ void run ()
   uBit.sleep (500 /*ms*/);
   uBit.rgb.off ();
 
-  startScrolling (sAnimationActive, "The End!", 300);
+  startScrolling (sAnimationActive, "TheEnd!", 200);
   waitForScrolling (sAnimationActive);
 
   cleanup ();
