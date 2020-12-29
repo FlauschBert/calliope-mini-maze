@@ -11,7 +11,6 @@
 extern MicroBit uBit;
 
 // TODO:
-// - rein pusten: map zentriert auf aktuelle position
 // - play victory melody
 
 namespace
@@ -31,7 +30,7 @@ float constexpr sMinPulseResolution = 20.f /*ms*/;
 // 0 - 4: no wall visible
 // 5 - 9: wall visible
 //
-using Row = std::vector<int8_t>;
+using Row = std::vector<uint8_t>;
 using Maze = std::vector<Row>;
 Maze const sMaze = {
 // 0  1  2  3  4  5  6  7  8  9  A  B
@@ -54,6 +53,10 @@ enum Direction {
   North = 0, East, South, West
 };
 
+enum Mode {
+  Floor = 0, Map
+};
+
 struct Game {
   int32_t sx = 5;
   int32_t sy = 9;
@@ -72,6 +75,9 @@ struct Player {
   Colorf rgb = std::make_tuple (0.f, 0.f, 0.f);
   float pulse = 1.f;
   unsigned long lastPulseStart = 0ul;
+
+  // view mode: floor or map
+  Mode mode = Floor;
 } sPlayer;
 
 struct MazePart {
@@ -84,6 +90,7 @@ struct MazePart {
 };
 
 MicroBitImage sScreen;
+MicroBitImage sMap;
 bool sAnimationActive = false;
 
 MazePart
@@ -292,6 +299,9 @@ void playTurnAroundSound ()
 
 void left (MicroBitEvent)
 {
+  if (Floor != sPlayer.mode)
+    return;
+
   sPlayer.di = static_cast<Direction> (modulo4 (sPlayer.di - 1));
 
   updateImage (
@@ -307,6 +317,9 @@ void left (MicroBitEvent)
 
 void right (MicroBitEvent)
 {
+  if (Floor != sPlayer.mode)
+    return;
+
   sPlayer.di = static_cast<Direction> (modulo4 (sPlayer.di + 1));
 
   updateImage (
@@ -322,6 +335,9 @@ void right (MicroBitEvent)
 
 void forward (MicroBitEvent)
 {
+  if (Floor != sPlayer.mode)
+    return;
+
   auto const mazePart = getMazePart (sMaze, sPlayer);
   if (mazePart.blocked)
   {
@@ -340,6 +356,66 @@ void forward (MicroBitEvent)
   playForwardSound ();
   uBit.display.print (sScreen);
   updateDistanceColor (sPlayer, sMaze);
+}
+
+MicroBitImage
+getMap (Maze const& maze)
+{
+  auto const mazeSizeX = maze.front ().size ();
+  auto const mazeSizeY = maze.size ();
+
+  // Clear new map with 1
+  // increase by 1 in each direction to show walls on the display outside
+  // the play area to not confuse the player
+  std::vector<uint8_t> const data ((mazeSizeX + 2) * (mazeSizeY * 2), sDI);
+  MicroBitImage map (
+    mazeSizeX + 2,
+    mazeSizeY + 2,
+    data.data ()
+  );
+
+  for (size_t x = 0; x < maze.front ().size (); ++x)
+    for (size_t y = 0; y < maze.size (); ++y)
+      map.setPixelValue (x + 1, y + 1, (maze [y][x] > 0) ? sDI : 0);
+
+  return map;
+}
+
+void printMap (MicroBitImage const& map, Player const& player)
+{
+  // Do not use copy constructor or copy operator here
+  // No copy is generated in this case and the original
+  // image is shifted
+
+  MicroBitImage tmp (
+    map.getWidth (),
+    map.getHeight (),
+    // program around bad api
+    const_cast<MicroBitImage*> (&map)->getBitmap ()
+  );
+
+  // shift left and up
+  // +2 because of border,
+  // -2 because of display center
+  // -1 because sMaze is one smaller in each direction than map
+  tmp.shiftLeft (player.px + 2 - 2 - 1);
+  tmp.shiftUp (player.py + 2 - 2 - 1);
+
+  uBit.display.print (tmp);
+}
+
+void toggleMap (MicroBitEvent)
+{
+  if (Floor == sPlayer.mode)
+  {
+    sPlayer.mode = Map;
+    printMap (sMap, sPlayer);
+  }
+  else
+  {
+    sPlayer.mode = Floor;
+    uBit.display.print (sScreen);
+  }
 }
 
 void init ()
@@ -362,6 +438,12 @@ void init ()
     MICROBIT_BUTTON_EVT_CLICK,
     forward
   );
+  // map mode
+  uBit.messageBus.listen (
+    MICROBIT_ID_GESTURE,
+    MICROBIT_ACCELEROMETER_EVT_SHAKE,
+    toggleMap
+  );
 }
 
 void cleanup ()
@@ -383,6 +465,12 @@ void cleanup ()
     MICROBIT_ID_BUTTON_AB,
     MICROBIT_BUTTON_EVT_CLICK,
     forward
+  );
+  // map mode
+  uBit.messageBus.ignore (
+    MICROBIT_ID_GESTURE,
+    MICROBIT_ACCELEROMETER_EVT_SHAKE,
+    toggleMap
   );
 }
 
@@ -430,21 +518,21 @@ void playTitleMelody ()
   using namespace maze::melody;
 
   Melody m = {
-    { c1,  t1 },
-    { c1,  t1 },
-    { br,  t8 },
-    { c1,  t4 },
-    { g,   t4 },
-    { c1,  t4 },
-    { g1,  t1 },
-    { br,  t4 },
-    { c2,  t1 },
-    { br,  t8 },
-    { c2,  t2 },
-    { h1,  t2 },
-    { br,  t8 },
-    { g1,  t2 },
-    { a1,  t1 }
+    { c1, t1 },
+    { c1, t1 },
+    { br, t8 },
+    { c1, t4 },
+    { g,  t4 },
+    { c1, t4 },
+    { g1, t1 },
+    { br, t4 },
+    { c2, t1 },
+    { br, t8 },
+    { c2, t2 },
+    { h1, t2 },
+    { br, t8 },
+    { g1, t2 },
+    { a1, t1 }
   };
 
   play (uBit, m);
@@ -457,7 +545,7 @@ namespace maze
 
 void run ()
 {
-  startScrolling (sAnimationActive, "MiniMaze0.7", 100);
+  startScrolling (sAnimationActive, "MiniMaze0.8", 100);
   playTitleMelody ();
   waitForScrolling (sAnimationActive);
 
@@ -468,6 +556,7 @@ void run ()
   sPlayer.lastPulseStart = uBit.systemTime ();
 
   sScreen = MicroBitImage (5, 5);
+  sMap = getMap (sMaze);
 
   updateImage (
     sScreen,
