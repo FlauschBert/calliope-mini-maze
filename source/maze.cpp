@@ -13,8 +13,6 @@ extern MicroBit uBit;
 // TODO:
 // - rein pusten: map zentriert auf aktuelle position
 // - play victory melody
-// - use setDisplayMode(DISPLAY_MODE_GREYSCALE) and show walls interior with
-//   less intensity
 
 namespace
 {
