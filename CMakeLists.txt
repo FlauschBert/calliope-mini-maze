@@ -62,6 +62,7 @@ include_directories(${NRF51_SDK_INC})
 
 add_executable(main
         source/main.cpp
+        source/melody.h
         source/maze.cpp
         source/maze.h
         # add more source files here, if needed
