@@ -32,8 +32,7 @@ The generated *.hex* file lands in the *build/calliope-mini-classic-gcc/source/*
 
 # The game
 
-It is about imitating the good old dungeon crawlers like *The bards tale* or something like that. In this version at least walking around in a "3D-view" works. The goal is to find a special place on the map. As faster the little RGB LED is pulsing as nearer the final spot is. Use the buttons *A* and *B* to turn left and right and both at the same time for stepping forwards. Also same secrets are hidden.  
-The implementation of the pulsing LED is still missing though right now.
+It is about imitating the good old dungeon crawlers like *The bards tale* or something like that. In this version at least walking around in a "3D-view" works. The goal is to find a special place on the map. As faster the little RGB LED is pulsing as nearer the final spot is. Use the buttons *A* and *B* to turn left and right and both at the same time for stepping forwards. Also same secrets are hidden.
 
 # License
 
