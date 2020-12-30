@@ -15,10 +15,10 @@ extern MicroBit uBit;
 
 namespace
 {
-uint8_t constexpr sDI = 255u;
-uint8_t constexpr sRGB = 30u;
+uint8_t constexpr sDI = 255;
+uint8_t constexpr sRGB = 25;
 float constexpr sSlowestPulse = 1200.f /*ms*/;
-float constexpr sMinPulseResolution = 20.f /*ms*/;
+float constexpr sMinPulseResolution = 50.f /*ms*/;
 
 // Array row, column (y, x)
 // 9: blocking wall
@@ -544,6 +544,8 @@ namespace maze
 
 void run ()
 {
+  uBit.rgb.off ();
+
   startScrolling (sAnimationActive, "MiniMaze0.8", 100);
   playTitleMelody ();
   waitForScrolling (sAnimationActive);
