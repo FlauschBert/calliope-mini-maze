@@ -5,6 +5,7 @@
 
 #include "maze.h"
 #include "melody.h"
+#include "images.h"
 
 #include <MicroBit.h>
 
@@ -12,6 +13,8 @@ extern MicroBit uBit;
 
 // TODO:
 // - play victory melody
+// - show floor and ceiling hole for up down
+// - add skull for fail, heart for victory
 
 namespace
 {
@@ -579,6 +582,10 @@ void run ()
 
   uBit.sleep (500 /*ms*/);
   uBit.rgb.off ();
+
+  uBit.display.clear ();
+  uBit.display.print (*image (ImageSmiley));
+  uBit.sleep (800 /*ms*/);
 
   startScrolling (sAnimationActive, "TheEnd!", 200);
   waitForScrolling (sAnimationActive);
