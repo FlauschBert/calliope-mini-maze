@@ -33,7 +33,7 @@ The `yt build` will not work out of the box. Install the cross-compiler and tool
 
 ### Installation on the Calliope mini
 
-The generated *.hex* file lands in the *build/calliope-mini-classic-gcc/source/* folder and is named *calliope-project-template-combined.hex*. Copy this file into the mounted share *MINI* of the Calliope mini device connected to the PC with the USB-cable.
+The generated *.hex* file lands in the *build/calliope-mini-classic-gcc/source/* folder and is named *calliope-project-template-combined.hex*. Copy this file into the mounted share *MINI* of the Calliope mini device connected to the PC with a USB-cable.
 
 # The game
 
@@ -45,7 +45,7 @@ It is about imitating the good old dungeon crawlers like *The bards tale* or som
 
 Beginning in the middle, the player is the dot in the lower middle and we can see the walls top down as little boxes.  
 In the upper row we can see the walls shaded if we would stand inside the floor and we would have more than 5x5 pixels on the display.  
-In the last row we can see the corresponding drawing as we do on the small display off the Calliope mini.  
+In the last row we can see the corresponding drawing as we do on the small display of the Calliope mini.  
 We only see one field before us and one on the left and on the right.
 
 # License
