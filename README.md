@@ -3,11 +3,11 @@
 ## Introduction
 
 This project is about programming the [Calliope mini V2](https://calliope-mini.github.io/v20/) in C++. See also [here](https://calliope.cc/en/calliope-mini/features) for the features of the device.  
-Although there are some very good editors for the device like the [PXT from Microsoft (MakeCode)](https://makecode.calliope.cc/) and [Open Roberta Lab from Fraunhofer IAIS, Media Engineering Department (NEPO)](https://lab.open-roberta.org/) there is also the possibility to program the device with C++.  
+Although there are some very good editors for the device like the [PXT from Microsoft (MakeCode)](https://makecode.calliope.cc/) and [Open Roberta Lab of Fraunhofer IAIS, Media Engineering Department (NEPO)](https://lab.open-roberta.org/) there is also the possibility to program the device with C++.  
 
 To program with C and C++ check out https://github.com/calliope-mini and especially the following projects:  
 - https://github.com/calliope-mini/calliope-demo: check the *source* folder for examples on how to use the different components of the Calliope mini.
-- https://github.com/calliope-mini/calliope-project-template: use this project to setup the environment for programming and generating the neded *.hex* files for the Calliope mini.
+- https://github.com/calliope-mini/calliope-project-template: use this project to setup the environment for programming and generating the needed *.hex* files for the Calliope mini.
 
 ## Documentation
 
@@ -20,7 +20,7 @@ Notice that the original project template code is provided under the Apache-2.0 
 
 #### Setup on manjaro
 
-*Yotta* is available as pamac package in the *AUR* repositories. If `yt update` is done the system is compromised by many many things like python2 and rust and other things. So use the *timeshift* feature before.
+*Yotta* is available as *pamac* package in the *AUR* repositories. If `yt update` is done the system is compromised by many many things like python2 and rust and other things. So use the *timeshift* feature before.
 
 ### Compiling
 
@@ -45,7 +45,7 @@ It is about imitating the good old dungeon crawlers like *The bards tale* or som
 
 Beginning in the middle, the player is the dot in the lower middle and we can see the walls top down as little boxes.  
 In the upper row we can see the walls shaded if we would stand inside the floor and we would have more than 5x5 pixels on the display.  
-In the last row we can see the corresponding drawing as we do on the small dsiplay off the Calliope mini.  
+In the last row we can see the corresponding drawing as we do on the small display off the Calliope mini.  
 We only see one field before us and one on the left and on the right.
 
 # License
