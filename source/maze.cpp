@@ -24,8 +24,9 @@ float constexpr sMinPulseResolution = 50.f /*ms*/;
 
 // Array row, column (y, x)
 // 9: blocking wall
-// 8: non-blocking secret wall
+// 8: non-blocking secret wall, yellow rgb led
 // 0: normal floor
+// 1: traps: death
 // 2: dark floor, no rgb led, display brightness 1
 //
 // visibility:
