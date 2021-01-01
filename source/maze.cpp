@@ -15,6 +15,7 @@ extern MicroBit uBit;
 // - play victory melody
 // - show floor and ceiling hole for up down
 // - add skull for fail, heart for victory
+// - add traps, death ending
 
 namespace
 {
@@ -27,7 +28,6 @@ float constexpr sMinPulseResolution = 50.f /*ms*/;
 // 9: blocking wall
 // 8: non-blocking secret wall
 // 0: normal floor
-// 1: secret floor, color yellow
 // 2: dark floor, no rgb led, display brightness 1
 //
 // visibility:
@@ -39,16 +39,16 @@ using Maze = std::vector<Row>;
 Maze const sMaze = {
 // 0  1  2  3  4  5  6  7  8  9  A  B
   {9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9}, // 0
-  {9, 0, 0, 0, 0, 0, 8, 1, 9, 9, 9, 9}, // 1
-  {9, 0, 9, 9, 9, 0, 9, 1, 9, 9, 9, 9}, // 2
-  {9, 0, 9, 0, 9, 0, 9, 2, 9, 9, 9, 9}, // 3
-  {9, 0, 9, 0, 0, 0, 9, 2, 9, 9, 9, 9}, // 4
-  {9, 0, 9, 0, 0, 9, 9, 2, 9, 9, 9, 9}, // 5
-  {9, 0, 0, 0, 0, 9, 9, 1, 9, 9, 9, 9}, // 6
-  {9, 9, 0, 0, 9, 8, 1, 1, 1, 8, 9, 9}, // 7
-  {9, 9, 0, 0, 9, 8, 9, 1, 9, 0, 0, 9}, // 8
+  {9, 0, 0, 0, 0, 0, 8, 2, 9, 9, 9, 9}, // 1
+  {9, 0, 9, 9, 9, 0, 9, 0, 9, 9, 9, 9}, // 2
+  {9, 0, 9, 0, 9, 0, 9, 0, 9, 9, 9, 9}, // 3
+  {9, 0, 9, 0, 0, 0, 9, 0, 8, 0, 9, 9}, // 4
+  {9, 0, 9, 0, 0, 9, 9, 0, 9, 0, 9, 9}, // 5
+  {9, 0, 0, 0, 0, 9, 9, 0, 9, 0, 9, 9}, // 6
+  {9, 9, 0, 0, 9, 8, 2, 0, 2, 8, 9, 9}, // 7
+  {9, 9, 0, 0, 9, 8, 9, 2, 9, 0, 0, 9}, // 8
   {9, 9, 0, 9, 0, 0, 9, 9, 9, 0, 0, 9}, // 9
-  {9, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 9}, // A
+  {9, 0, 0, 0, 0, 0, 2, 8, 2, 0, 0, 9}, // A
   {9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9}  // B
 };
 
@@ -162,7 +162,6 @@ updateFloor (struct Floor& floor, Maze const &maze, Player const& player)
     floor.rgb = std::make_tuple (0.f, 0.f, 0.f);
     floor.brightness = 1;
     break;
-  case 1:
   case 8:
     floor.rgb = std::make_tuple (1.f, 1.f, 0.f);
     break;
