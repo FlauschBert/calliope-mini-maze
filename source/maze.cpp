@@ -27,7 +27,8 @@ float constexpr sMinPulseResolution = 50.f /*ms*/;
 // 9: blocking wall
 // 8: non-blocking secret wall
 // 0: normal floor
-// 1: secret floor, color
+// 1: secret floor, color yellow
+// 2: dark floor, no rgb led, display brightness 1
 //
 // visibility:
 // 0 - 4: no wall visible
@@ -38,16 +39,16 @@ using Maze = std::vector<Row>;
 Maze const sMaze = {
 // 0  1  2  3  4  5  6  7  8  9  A  B
   {9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9}, // 0
-  {9, 0, 0, 0, 0, 0, 8, 8, 9, 9, 9, 9}, // 1
+  {9, 0, 0, 0, 0, 0, 8, 1, 9, 9, 9, 9}, // 1
   {9, 0, 9, 9, 9, 0, 9, 1, 9, 9, 9, 9}, // 2
-  {9, 0, 9, 0, 9, 0, 9, 1, 9, 9, 9, 9}, // 3
-  {9, 0, 9, 0, 0, 0, 9, 1, 9, 9, 9, 9}, // 4
-  {9, 0, 9, 0, 0, 9, 9, 1, 9, 9, 9, 9}, // 5
+  {9, 0, 9, 0, 9, 0, 9, 2, 9, 9, 9, 9}, // 3
+  {9, 0, 9, 0, 0, 0, 9, 2, 9, 9, 9, 9}, // 4
+  {9, 0, 9, 0, 0, 9, 9, 2, 9, 9, 9, 9}, // 5
   {9, 0, 0, 0, 0, 9, 9, 1, 9, 9, 9, 9}, // 6
-  {9, 0, 0, 0, 9, 9, 9, 1, 9, 9, 9, 9}, // 7
-  {9, 9, 0, 0, 0, 9, 9, 1, 9, 9, 9, 9}, // 8
-  {9, 9, 0, 9, 0, 0, 8, 1, 9, 9, 9, 9}, // 9
-  {9, 0, 0, 0, 0, 9, 9, 9, 9, 9, 9, 9}, // A
+  {9, 9, 0, 0, 9, 8, 1, 1, 1, 8, 9, 9}, // 7
+  {9, 9, 0, 0, 9, 8, 9, 1, 9, 0, 0, 9}, // 8
+  {9, 9, 0, 9, 0, 0, 9, 9, 9, 0, 0, 9}, // 9
+  {9, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 9}, // A
   {9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9}  // B
 };
 
@@ -69,15 +70,19 @@ struct Game {
 } const sGame;
 
 using Colorf = std::tuple<float, float, float>;
-struct Player {
-  int32_t px = 1;
-  int32_t py = 1;
-  Direction di = North;
-
+struct Floor {
+  uint8_t brightness = 15;
+  
   // distance pulse rgb handling - defaults to largest distance
   Colorf rgb = std::make_tuple (0.f, 0.f, 0.f);
   float pulse = 1.f;
   unsigned long lastPulseStart = 0ul;
+} sFloor;
+
+struct Player {
+  int32_t px = 1;
+  int32_t py = 1;
+  Direction di = North;
 
   // view mode: floor or map
   Mode mode = Floor;
@@ -88,7 +93,7 @@ struct MazePart {
   bool front = false;
   bool left = false;
   bool right = false;
-  // movability
+  // mobility
   bool blocked = false;
 };
 
@@ -142,23 +147,34 @@ float getDistanceNorm (Maze const &maze, Player const &player)
   return static_cast<float> (manhattan) / static_cast<float> (max);
 }
 
-Colorf getFloorColor (Maze const &maze, Player const &player)
+void
+updateFloor (struct Floor& floor, Maze const &maze, Player const& player)
 {
-  auto const floor = maze[player.py][player.px];
-  switch (floor)
+  // default brightness
+  floor.brightness = 15;
+  
+  switch (maze [player.py][player.px])
   {
   case 0:
-    return std::make_tuple (0.f, 1.f, 1.f);
+    floor.rgb = std::make_tuple (0.f, 1.f, 1.f);
+    break;
+  case 2:
+    floor.rgb = std::make_tuple (0.f, 0.f, 0.f);
+    floor.brightness = 1;
+    break;
   case 1:
   case 8:
-    return std::make_tuple (1.f, 1.f, 0.f);
+    floor.rgb = std::make_tuple (1.f, 1.f, 0.f);
+    break;
   default:
-    return std::make_tuple (1.f, 0.f, 0.f);
+    floor.rgb = std::make_tuple (1.f, 0.f, 0.f);
   }
+  
+  // relative time between two rgb led pulses: the shorter the nearer to the goal, can be 0.f
+  floor.pulse = getDistanceNorm (maze, player);
 }
 
 using Color = std::tuple<uint8_t, uint8_t, uint8_t>;
-
 Color getScaled (Colorf const &color, float const intensity, uint8_t const rgbMax)
 {
   return std::make_tuple (
@@ -168,34 +184,29 @@ Color getScaled (Colorf const &color, float const intensity, uint8_t const rgbMa
   );
 }
 
-void updateDistanceColor (Player &player, Maze const &maze)
-{
-  player.rgb = getFloorColor (maze, player);
-  // relative time between two rgb led pulses: the shorter the nearer to the goal, can be 0.f
-  player.pulse = getDistanceNorm (maze, player);
-}
-
-void updatePulse (Player &player)
+void
+updatePulse (struct Floor& floor, float const pulseResolution)
 {
   uint8_t r, g, b;
-  auto const maxPulse = player.pulse * sSlowestPulse;
+  auto const maxPulse = floor.pulse * sSlowestPulse;
 
-  if (maxPulse < sMinPulseResolution)
+  if (maxPulse < pulseResolution)
   {
-    player.lastPulseStart = uBit.systemTime ();
+    floor.lastPulseStart = uBit.systemTime ();
     r = g = b = sRGB;
   }
   else
   {
     auto const time = uBit.systemTime ();
-    if (static_cast<float> (time - player.lastPulseStart) > maxPulse)
-      player.lastPulseStart = time;
+    if (static_cast<float> (time - floor.lastPulseStart) > maxPulse)
+      floor.lastPulseStart = time;
 
-    auto const intensity = (1.f - player.pulse) * static_cast<float> (time - player.lastPulseStart) / maxPulse;
-    std::tie (r, g, b) = getScaled (player.rgb, intensity, sRGB);
+    auto const intensity = (1.f - floor.pulse) * static_cast<float> (time - floor.lastPulseStart) / maxPulse;
+    std::tie (r, g, b) = getScaled (floor.rgb, intensity, sRGB);
   }
 
   uBit.rgb.setColour (r, g, b, 0);
+  uBit.sleep (pulseResolution /*ms*/);
 }
 
 void move (Player &player)
@@ -260,15 +271,32 @@ void setMiddle (MicroBitImage &img, bool fill)
 }
 
 void updateImage (
-  MicroBitImage &image,
-  Maze const &maze,
-  Player const &player)
+  MicroBitImage& image,
+  Maze const& maze,
+  Player const& player)
 {
   image.clear ();
   auto const part = getMazePart (maze, player);
   setLeft (image, part.left);
   setMiddle (image, part.front);
   setRight (image, part.right);
+}
+
+void
+updateVisuals (MicroBitImage& image,
+               struct Floor& floor,
+               Maze const& maze,
+               Player const& player)
+{
+  updateImage (
+    image,
+    maze,
+    player
+  );
+  updateFloor (floor, maze, player);
+
+  uBit.display.setBrightness (floor.brightness);
+  uBit.display.print (image);
 }
 
 int modulo4 (int v)
@@ -307,15 +335,8 @@ void left (MicroBitEvent)
 
   sPlayer.di = static_cast<Direction> (modulo4 (sPlayer.di - 1));
 
-  updateImage (
-    sScreen,
-    sMaze,
-    sPlayer
-  );
-
   playTurnAroundSound ();
-  uBit.display.print (sScreen);
-  updateDistanceColor (sPlayer, sMaze);
+  updateVisuals (sScreen, sFloor, sMaze, sPlayer);
 }
 
 void right (MicroBitEvent)
@@ -325,15 +346,8 @@ void right (MicroBitEvent)
 
   sPlayer.di = static_cast<Direction> (modulo4 (sPlayer.di + 1));
 
-  updateImage (
-    sScreen,
-    sMaze,
-    sPlayer
-  );
-
   playTurnAroundSound ();
-  uBit.display.print (sScreen);
-  updateDistanceColor (sPlayer, sMaze);
+  updateVisuals (sScreen, sFloor, sMaze, sPlayer);
 }
 
 void forward (MicroBitEvent)
@@ -350,15 +364,8 @@ void forward (MicroBitEvent)
 
   move (sPlayer);
 
-  updateImage (
-    sScreen,
-    sMaze,
-    sPlayer
-  );
-
   playForwardSound ();
-  uBit.display.print (sScreen);
-  updateDistanceColor (sPlayer, sMaze);
+  updateVisuals (sScreen, sFloor, sMaze, sPlayer);
 }
 
 MicroBitImage
@@ -379,7 +386,8 @@ getMap (Maze const& maze)
 
   for (size_t x = 0; x < maze.front ().size (); ++x)
     for (size_t y = 0; y < maze.size (); ++y)
-      map.setPixelValue (x + 1, y + 1, (maze [y][x] > 0) ? sDI : 0);
+      if (maze [y][x] < 5)
+        map.setPixelValue (x + 1, y + 1, 0);
 
   return map;
 }
@@ -557,34 +565,27 @@ void run ()
   sPlayer.px = sGame.sx;
   sPlayer.py = sGame.sy;
   sPlayer.di = sGame.sd;
-  sPlayer.lastPulseStart = uBit.systemTime ();
+
+  // Initialize floor led pulsing
+  sFloor.lastPulseStart = uBit.systemTime ();
 
   sScreen = MicroBitImage (5, 5);
   sMap = getMap (sMaze);
 
-  updateImage (
-    sScreen,
-    sMaze,
-    sPlayer
-  );
-
-  uBit.display.setBrightness (15);
-  uBit.display.print (sScreen);
-  updateDistanceColor (sPlayer, sMaze);
+  updateVisuals (sScreen, sFloor, sMaze, sPlayer);
 
   init ();
 
   while (!isTheEnd(sGame, sPlayer))
   {
-    updatePulse (sPlayer);
-    uBit.sleep (sMinPulseResolution /*ms*/);
+    updatePulse (sFloor, sMinPulseResolution);
   }
 
   uBit.sleep (500 /*ms*/);
   uBit.rgb.off ();
 
   uBit.display.clear ();
-  uBit.display.print (*image (ImageSmiley));
+  uBit.display.print (*image (ImageHeart));
   uBit.sleep (800 /*ms*/);
 
   startScrolling (sAnimationActive, "TheEnd!", 200);
