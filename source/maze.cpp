@@ -14,8 +14,6 @@ extern MicroBit uBit;
 // TODO:
 // - play victory melody
 // - show floor and ceiling hole for up down
-// - add skull for fail, heart for victory
-// - add traps, death ending
 
 namespace
 {
@@ -39,16 +37,16 @@ using Maze = std::vector<Row>;
 Maze const sMaze = {
 // 0  1  2  3  4  5  6  7  8  9  A  B
   {9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9}, // 0
-  {9, 0, 0, 0, 0, 0, 8, 2, 9, 9, 9, 9}, // 1
-  {9, 0, 9, 9, 9, 0, 9, 0, 9, 9, 9, 9}, // 2
-  {9, 0, 9, 0, 9, 0, 9, 0, 9, 9, 9, 9}, // 3
+  {9, 0, 0, 2, 1, 0, 8, 0, 9, 9, 9, 9}, // 1
+  {9, 0, 9, 9, 9, 1, 9, 0, 9, 9, 9, 9}, // 2
+  {9, 0, 9, 0, 9, 2, 9, 0, 9, 9, 9, 9}, // 3
   {9, 0, 9, 0, 0, 0, 9, 0, 8, 0, 9, 9}, // 4
-  {9, 0, 9, 0, 0, 9, 9, 0, 9, 0, 9, 9}, // 5
+  {9, 0, 9, 0, 0, 9, 9, 8, 9, 0, 9, 9}, // 5
   {9, 0, 0, 0, 0, 9, 9, 0, 9, 0, 9, 9}, // 6
-  {9, 9, 0, 0, 9, 8, 2, 0, 2, 8, 9, 9}, // 7
-  {9, 9, 0, 0, 9, 8, 9, 2, 9, 0, 0, 9}, // 8
+  {9, 9, 0, 0, 9, 8, 0, 2, 0, 8, 9, 9}, // 7
+  {9, 9, 0, 0, 9, 8, 9, 0, 9, 0, 0, 9}, // 8
   {9, 9, 0, 9, 0, 0, 9, 9, 9, 0, 0, 9}, // 9
-  {9, 0, 0, 0, 0, 0, 2, 8, 2, 0, 0, 9}, // A
+  {9, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 9}, // A
   {9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9}  // B
 };
 
@@ -482,10 +480,19 @@ void cleanup ()
   );
 }
 
-bool isTheEnd (Game const& game, Player const& player)
+// 0: no end
+// 1: victory
+// 2: death
+uint8_t
+isTheEnd (Game const& game, Player const& player, Maze const& maze)
 {
-  return game.ex == player.px &&
-         game.ey == player.py;
+  auto const field = maze [player.py][player.px];
+  if (1 == field)
+    return 2;
+  if (game.ex == player.px &&
+      game.ey == player.py)
+    return 1;
+  return 0;
 }
 
 void startScrolling (bool& active, std::string const& text, int const delay)
@@ -575,16 +582,19 @@ void run ()
 
   init ();
 
-  while (!isTheEnd(sGame, sPlayer))
+  uint8_t end;
+  do
   {
     updatePulse (sFloor, sMinPulseResolution);
+    end = isTheEnd (sGame, sPlayer, sMaze);
   }
+  while (0 == end);
 
   uBit.sleep (500 /*ms*/);
   uBit.rgb.off ();
 
   uBit.display.clear ();
-  uBit.display.print (*image (ImageHeart));
+  uBit.display.print ((1 == end) ? *image (ImageSmiley) : *image (ImageSadly));
   uBit.sleep (800 /*ms*/);
 
   startScrolling (sAnimationActive, "TheEnd!", 200);
