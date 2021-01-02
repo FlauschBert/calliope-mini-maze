@@ -555,18 +555,69 @@ void playTitleMelody ()
   play (uBit, m);
 }
 
+
 }
 
 namespace maze
 {
 
+bool titleActive = false;
+
+MicroBitImage createImage (std::string const& text)
+{
+  MicroBitImage img (text.size () * 5, 5);
+  int x = 0;
+  for (auto const c : text)
+  {
+    img.print (c, x, 0);
+    x += 5;
+  }
+
+  return img;
+}
+
+MicroBitImage createBackground (uint8_t const brightness)
+{
+  std::vector<uint8_t> const data (5 * 5, brightness);
+  return MicroBitImage (5, 5, data.data ());
+}
+
+void showTitle ()
+{
+  auto textImage = createImage (" MiniMaze0.9 ");
+  uBit.display.setDisplayMode (DISPLAY_MODE_GREYSCALE);
+
+  uint8_t brightness = 0;
+  for (int stride = 0; stride < textImage.getWidth (); ++stride)
+  {
+    textImage.shiftLeft (1);
+
+    for (int i = 0; i < 2; ++i)
+    {
+      auto background = createBackground (brightness);
+      background.paste (textImage, 0, 0, 1);
+
+      uBit.display.print (background);
+      uBit.sleep (62);
+
+      brightness += 1;
+      if (brightness > 15)
+        brightness = 0;
+    }
+  }
+
+  titleActive = false;
+}
+
 void run ()
 {
   uBit.rgb.off ();
 
-  startScrolling (sAnimationActive, "MiniMaze0.8", 100);
+  titleActive = true;
+  create_fiber (showTitle);
   playTitleMelody ();
-  waitForScrolling (sAnimationActive);
+  while (titleActive)
+    uBit.sleep (50);
 
   // Initialize player position and direction
   sPlayer.px = sGame.sx;
@@ -579,6 +630,7 @@ void run ()
   sScreen = MicroBitImage (5, 5);
   sMap = getMap (sMaze);
 
+  uBit.display.setDisplayMode (DISPLAY_MODE_BLACK_AND_WHITE);
   updateVisuals (sScreen, sFloor, sMaze, sPlayer);
 
   init ();
