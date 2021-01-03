@@ -28,6 +28,7 @@ float constexpr sMinPulseResolution = 50.f /*ms*/;
 // 0: normal floor
 // 1: traps: death
 // 2: dark floor, no rgb led, display brightness 1
+// 3: twister: random direction
 //
 // visibility:
 // 0 - 4: no wall visible
@@ -38,15 +39,15 @@ using Maze = std::vector<Row>;
 Maze const sMaze = {
 // 0  1  2  3  4  5  6  7  8  9  A  B
   {9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9}, // 0
-  {9, 0, 0, 2, 1, 0, 8, 0, 9, 9, 9, 9}, // 1
+  {9, 0, 0, 2, 1, 0, 8, 3, 9, 9, 9, 9}, // 1
   {9, 0, 9, 9, 9, 1, 9, 0, 9, 9, 9, 9}, // 2
-  {9, 0, 9, 0, 9, 2, 9, 0, 9, 9, 9, 9}, // 3
+  {9, 0, 9, 0, 9, 2, 9, 3, 9, 9, 9, 9}, // 3
   {9, 0, 9, 0, 0, 0, 9, 0, 8, 0, 9, 9}, // 4
   {9, 0, 9, 0, 0, 9, 9, 8, 9, 0, 9, 9}, // 5
   {9, 0, 0, 0, 0, 9, 9, 0, 9, 0, 9, 9}, // 6
   {9, 9, 0, 0, 9, 8, 0, 2, 0, 8, 9, 9}, // 7
   {9, 9, 0, 0, 9, 8, 9, 0, 9, 0, 0, 9}, // 8
-  {9, 9, 0, 9, 0, 0, 9, 9, 9, 0, 0, 9}, // 9
+  {9, 9, 3, 9, 3, 0, 9, 9, 9, 0, 0, 9}, // 9
   {9, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 9}, // A
   {9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9}  // B
 };
@@ -147,25 +148,45 @@ float getDistanceNorm (Maze const &maze, Player const &player)
 }
 
 void
-updateFloor (struct Floor& floor, Maze const &maze, Player const& player)
+updateFloor (struct Floor& floor, Player& player, Maze const &maze)
 {
   // default brightness
   floor.brightness = 15;
-  
+
   switch (maze [player.py][player.px])
   {
-  case 0:
-    floor.rgb = std::make_tuple (0.f, 1.f, 1.f);
-    break;
   case 2:
-    floor.rgb = std::make_tuple (0.f, 0.f, 0.f);
     floor.brightness = 1;
     break;
-  case 8:
+  case 3:
+    Direction newDi;
+    do
+    {
+      newDi = static_cast<Direction> (microbit_random (4));
+    }
+    while (newDi == player.di);
+    player.di = newDi;
+    break;
+  }
+
+  switch (player.di)
+  {
+  case North:
+    // Earth - green / coins
+    floor.rgb = std::make_tuple (0.f, 1.f, 0.f);
+    break;
+  case East:
+    // Air - yellow / swords
     floor.rgb = std::make_tuple (1.f, 1.f, 0.f);
     break;
-  default:
+  case South:
+    // Fire - red / wands
     floor.rgb = std::make_tuple (1.f, 0.f, 0.f);
+    break;
+  case West:
+    // Water - blue / cups
+    floor.rgb = std::make_tuple (0.f, 0.f, 1.f);
+    break;
   }
   
   // relative time between two rgb led pulses: the shorter the nearer to the goal, can be 0.f
@@ -283,15 +304,15 @@ void updateImage (
 void
 updateVisuals (MicroBitImage& image,
                struct Floor& floor,
-               Maze const& maze,
-               Player const& player)
+               Player& player,
+               Maze const& maze)
 {
+  updateFloor (floor, player, maze);
   updateImage (
     image,
     maze,
     player
   );
-  updateFloor (floor, maze, player);
 
   uBit.display.setBrightness (floor.brightness);
   uBit.display.print (image);
@@ -334,7 +355,7 @@ void left (MicroBitEvent)
   sPlayer.di = static_cast<Direction> (modulo4 (sPlayer.di - 1));
 
   playTurnAroundSound ();
-  updateVisuals (sScreen, sFloor, sMaze, sPlayer);
+  updateVisuals (sScreen, sFloor, sPlayer, sMaze);
 }
 
 void right (MicroBitEvent)
@@ -345,7 +366,7 @@ void right (MicroBitEvent)
   sPlayer.di = static_cast<Direction> (modulo4 (sPlayer.di + 1));
 
   playTurnAroundSound ();
-  updateVisuals (sScreen, sFloor, sMaze, sPlayer);
+  updateVisuals (sScreen, sFloor, sPlayer, sMaze);
 }
 
 void forward (MicroBitEvent)
@@ -363,7 +384,7 @@ void forward (MicroBitEvent)
   move (sPlayer);
 
   playForwardSound ();
-  updateVisuals (sScreen, sFloor, sMaze, sPlayer);
+  updateVisuals (sScreen, sFloor, sPlayer, sMaze);
 }
 
 MicroBitImage
@@ -631,7 +652,7 @@ void run ()
   sMap = getMap (sMaze);
 
   uBit.display.setDisplayMode (DISPLAY_MODE_BLACK_AND_WHITE);
-  updateVisuals (sScreen, sFloor, sMaze, sPlayer);
+  updateVisuals (sScreen, sFloor, sPlayer, sMaze);
 
   init ();
 
@@ -650,11 +671,18 @@ void run ()
   uBit.display.print ((1 == end) ? *image (ImageSmiley) : *image (ImageSadly));
   uBit.sleep (800 /*ms*/);
 
-  startScrolling (sAnimationActive, "TheEnd!", 200);
+  switch (end)
+  {
+  case 1:
+    startScrolling (sAnimationActive, "Victory!", 150);
+    break;
+  case 2:
+    startScrolling (sAnimationActive, "Trap!", 150);
+    break;
+  }
   waitForScrolling (sAnimationActive);
 
   uBit.display.clear ();
-
   cleanup ();
 }
 
