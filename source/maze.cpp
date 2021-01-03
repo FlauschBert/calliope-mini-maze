@@ -151,7 +151,7 @@ void
 updateFloor (struct Floor& floor, Player& player, Maze const &maze)
 {
   // default brightness
-  floor.brightness = 15;
+  floor.brightness = 20;
 
   switch (maze [player.py][player.px])
   {
@@ -584,6 +584,14 @@ namespace maze
 
 bool titleActive = false;
 
+void setBrightness (MicroBitImage& img, uint8_t const brightness)
+{
+  auto* dataPtr = img.getBitmap ();
+  for (int i = 0; i < img.getSize (); ++i)
+    if (dataPtr [i] > 0)
+      dataPtr [i] = brightness;
+}
+
 MicroBitImage createImage (std::string const& text)
 {
   MicroBitImage img (text.size () * 5, 5);
@@ -605,7 +613,8 @@ MicroBitImage createBackground (uint8_t const brightness)
 
 void showTitle ()
 {
-  auto textImage = createImage (" MiniMaze0.9 ");
+  auto textImage = createImage (" MiniMaze0.92 ");
+  setBrightness (textImage, 62);
   uBit.display.setDisplayMode (DISPLAY_MODE_GREYSCALE);
 
   uint8_t brightness = 0;
